@@ -1,10 +1,19 @@
-pandas
-numpy
-seaborn
-matplotlib
-scikit-learn
-flask
-catboost
-xgboost
-dill
+# Data handling
+pandas==2.2.2
+numpy==1.26.4
+
+# Visualization
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Machine learning (CPU builds only)
+scikit-learn==1.5.1
+xgboost==2.1.1
+catboost==1.2.7
+
+# Web
+flask==3.0.3
+
+# Serialization
+dill==0.3.8
 
