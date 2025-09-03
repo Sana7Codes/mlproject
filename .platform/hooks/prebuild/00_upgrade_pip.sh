@@ -8,4 +8,4 @@ if ! command -v pip3 &> /dev/null; then
 fi
 
 # Now that pip is confirmed to be installed, proceed with upgrade
-python3 -m pip install --upgrade pip setuptools wheel
+python3 -m pip3 install --upgrade pip3 setuptools wheel
