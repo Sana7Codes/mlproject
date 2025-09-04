@@ -1,27 +1,38 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Log everything for debugging
+LOG_FILE="/var/log/eb-hooks/00_setup_and_install.log"
 mkdir -p /var/log/eb-hooks
-exec >/var/log/eb-hooks/00_setup_and_install.log 2>&1
+# start fresh log
+: > "$LOG_FILE"
 
-# Locate EB’s virtualenv binaries reliably
-PIP_BIN="$(find /var/app/venv -type f -path '*/bin/pip' | head -n1 || true)"
-PY_BIN="$(find /var/app/venv -type f -path '*/bin/python' | head -n1 || true)"
-if [[ -z "${PIP_BIN}" || -z "${PY_BIN}" ]]; then
-  echo "ERROR: Could not locate EB virtualenv (pip/python) under /var/app/venv"
-  ls -R /var/app/venv || true
-  exit 1
-fi
+# Wrap everything so stdout+stderr go to the log (NO bare 'exec' anywhere)
+{
+  echo "[INFO] Starting prebuild at $(date -Iseconds)"
 
-REQ_FILE="/var/app/staging/requirements.txt"
-ls -l "$REQ_FILE"
+  # Locate EB venv
+  PIP_BIN="$(find /var/app/venv -type f -path '*/bin/pip' | head -n1 || true)"
+  PY_BIN="$(find /var/app/venv -type f -path '*/bin/python' | head -n1 || true)"
+  if [[ -z "${PIP_BIN}" || -z "${PY_BIN}" ]]; then
+    echo "[ERROR] Could not locate EB virtualenv under /var/app/venv"
+    ls -R /var/app/venv || true
+    exit 1
+  fi
+  echo "[INFO] Using pip: $PIP_BIN"
+  echo "[INFO] Using python: $PY_BIN"
 
-# Upgrade pip toolchain inside EB venv
-"$PY_BIN" -m pip install --upgrade pip setuptools wheel
+  REQ_FILE="/var/app/staging/requirements.txt"
+  echo "[INFO] requirements.txt:"
+  ls -l "$REQ_FILE"
 
-# Install deps without cache to save disk. (Do NOT use bare 'exec'!)
-"$PIP_BIN" install --no-cache-dir -r "$REQ_FILE"
+  echo "[INFO] Upgrading pip toolchain"
+  "$PY_BIN" -m pip install --upgrade pip setuptools wheel
 
-# Keep disk clean
-rm -rf /root/.cache/pip /tmp/* /var/tmp/* || true
+  echo "[INFO] Installing requirements (no cache)"
+  "$PIP_BIN" install --no-cache-dir -r "$REQ_FILE"
+
+  echo "[INFO] Cleaning temp/cache"
+  rm -rf /root/.cache/pip /tmp/* /var/tmp/* || true
+
+  echo "[INFO] Prebuild completed at $(date -Iseconds)"
+} >>"$LOG_FILE" 2>&1
