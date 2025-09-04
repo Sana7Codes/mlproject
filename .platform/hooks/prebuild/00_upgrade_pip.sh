@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 
+# Log to EB hook logs (optional but helpful for debugging)
+mkdir -p /var/log/eb-hooks
+exec >/var/log/eb-hooks/00_upgrade_pip.log 2>&1
+
+# Activate Elastic Beanstalk’s virtualenv
 source /var/app/venv/*/bin/activate
 
-# clean caches before install
-rm -rf /root/.cache/pip /tmp/* /var/tmp/* || true
-
-# install CPU-only, no-cache, only wheels
-pip install --no-cache-dir --only-binary=:all: -r /var/app/staging/requirements.txt
-
+# Upgrade pip and setuptools to latest stable
+python3 -m pip install --upgrade pip setuptools wheel
